@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://sithumud.github.io/sithumud.github.io/",
+  "homepage": "https://sithumud.me/sithumud.github.io/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
