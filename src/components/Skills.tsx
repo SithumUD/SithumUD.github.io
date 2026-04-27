@@ -16,7 +16,7 @@ import {
 ───────────────────────────────────────── */
 interface SkillDef {
   name: string;
-  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+  icon: React.ComponentType<{ size?: number | string; style?: React.CSSProperties }>;
   category: string;
   description: string;
 }
@@ -85,15 +85,19 @@ const BackgroundCanvas: React.FC<{ containerRef: React.RefObject<HTMLDivElement>
   const rafRef = useRef(0);
   const mouseRef = useRef({ x: 0.5, y: 0.5 });
 
-  const ambientStars = useMemo(() =>
-    Array.from({ length: 160 }, () => ({
+  // Reduce star count on mobile for performance
+  const ambientStars = useMemo(() => {
+    const isMobile = window.innerWidth < 768;
+    const count = isMobile ? 80 : 160;
+    return Array.from({ length: count }, () => ({
       x: Math.random(), y: Math.random(),
       r: Math.random() * 0.9 + 0.15,
       a: Math.random() * 0.45 + 0.08,
       ts: 0.003 + Math.random() * 0.008,
       to: Math.random() * Math.PI * 2,
       col: Math.random() > 0.88 ? (Math.random() > 0.5 ? "#93C5FD" : "#C4B5FD") : "#ffffff",
-    })), []);
+    }));
+  }, []);
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
@@ -185,7 +189,7 @@ const BackgroundCanvas: React.FC<{ containerRef: React.RefObject<HTMLDivElement>
 };
 
 /* ─────────────────────────────────────────
-   TOOLTIP CARD
+   TOOLTIP CARD (responsive)
 ───────────────────────────────────────── */
 interface TooltipProps {
   skill: SkillDef;
@@ -199,7 +203,8 @@ const SkillTooltip: React.FC<TooltipProps> = ({ skill, x, y, containerW, contain
   const cfg = CAT_CONFIG[skill.category] || CAT_CONFIG.AI;
   const Icon = skill.icon;
 
-  const W = 200, H = 110;
+  const W = Math.min(200, window.innerWidth - 32);
+  const H = 110;
   let left = x + 16;
   let top  = y - H / 2;
   if (left + W > containerW - 8) left = x - W - 16;
@@ -216,16 +221,16 @@ const SkillTooltip: React.FC<TooltipProps> = ({ skill, x, y, containerW, contain
         position: "absolute",
         left, top, width: W,
         zIndex: 50,
-        background: "rgba(8,14,30,0.92)",
+        background: "rgba(8,14,30,0.95)",
         border: `1px solid ${cfg.color}40`,
         borderRadius: 12,
-        padding: "12px 14px",
+        padding: "10px 12px",
         pointerEvents: "none",
         backdropFilter: "blur(12px)",
         boxShadow: `0 0 0 1px rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${cfg.glow}30`,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 7 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
         <div style={{
           width: 32, height: 32, borderRadius: 8,
           background: cfg.badge,
@@ -237,7 +242,7 @@ const SkillTooltip: React.FC<TooltipProps> = ({ skill, x, y, containerW, contain
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>{skill.name}</div>
           <span style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+            fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
             textTransform: "uppercase", color: cfg.badgeText,
             background: cfg.badge, border: `1px solid ${cfg.color}40`,
             borderRadius: 99, padding: "1px 6px", display: "inline-block", marginTop: 2,
@@ -246,10 +251,9 @@ const SkillTooltip: React.FC<TooltipProps> = ({ skill, x, y, containerW, contain
           </span>
         </div>
       </div>
-      <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.55)", lineHeight: 1.45 }}>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
         {skill.description}
       </div>
-      {/* Corner accent */}
       <div style={{
         position: "absolute", top: -1, right: 12, width: 40, height: 1,
         background: `linear-gradient(90deg, transparent, ${cfg.color}80, transparent)`,
@@ -259,30 +263,32 @@ const SkillTooltip: React.FC<TooltipProps> = ({ skill, x, y, containerW, contain
 };
 
 /* ─────────────────────────────────────────
-   SKILL STAR
+   SKILL STAR (with touch support)
 ───────────────────────────────────────── */
 interface SkillStarProps {
   star: StarData;
   isHovered: boolean;
   isOtherHovered: boolean;
   onHover: (id: number | null, x: number, y: number) => void;
+  onTouch: (id: number | null, e: React.TouchEvent) => void;
 }
 
-const SkillStar: React.FC<SkillStarProps> = ({ star, isHovered, isOtherHovered, onHover }) => {
+const SkillStar: React.FC<SkillStarProps> = ({ star, isHovered, isOtherHovered, onHover, onTouch }) => {
   const cfg = CAT_CONFIG[star.skill.category] || CAT_CONFIG.AI;
   const Icon = star.skill.icon;
-  const rafRef = useRef(0);
-  const dotRef = useRef<HTMLDivElement>(null);
-
-  // CSS keyframe twinkle via inline animation
   const animName = `twinkle_${star.id}`;
+
+  // Scale star size on mobile
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const baseSize = isMobile ? Math.min(star.size, 5) : star.size;
+  const hoverScale = isHovered ? (isMobile ? 2.2 : 2.5) : 1;
 
   return (
     <>
       <style>{`
         @keyframes ${animName} {
-          0%,100% { opacity: ${star.size > 5 ? 0.85 : 0.6}; transform: scale(1); }
-          50%      { opacity: 1; transform: scale(${star.size > 5 ? 1.12 : 1.08}); }
+          0%,100% { opacity: ${baseSize > 4 ? 0.85 : 0.6}; transform: scale(1); }
+          50%      { opacity: 1; transform: scale(${baseSize > 4 ? 1.12 : 1.08}); }
         }
       `}</style>
       <div
@@ -294,6 +300,15 @@ const SkillStar: React.FC<SkillStarProps> = ({ star, isHovered, isOtherHovered, 
           onHover(star.id, x, y);
         }}
         onMouseLeave={() => onHover(null, 0, 0)}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          const rect = (e.currentTarget.closest(".skills-universe") as HTMLElement)?.getBoundingClientRect();
+          const touch = e.touches[0];
+          const x = touch.clientX - (rect?.left ?? 0);
+          const y = touch.clientY - (rect?.top ?? 0);
+          onTouch(star.id, e as any);
+          onHover(star.id, x, y);
+        }}
         style={{
           position: "absolute",
           left: `${star.x}%`,
@@ -308,45 +323,39 @@ const SkillStar: React.FC<SkillStarProps> = ({ star, isHovered, isOtherHovered, 
           opacity: isOtherHovered ? 0.25 : 1,
         }}
       >
-        {/* Outer glow ring on hover */}
         <div style={{
           position: "absolute",
-          width: star.size * 5,
-          height: star.size * 5,
+          width: baseSize * 5,
+          height: baseSize * 5,
           borderRadius: "50%",
           background: `radial-gradient(circle, ${cfg.glow}${isHovered ? "50" : "00"} 0%, transparent 70%)`,
           transition: "background 0.25s",
           pointerEvents: "none",
         }} />
 
-        {/* The star dot */}
         <div
-          ref={dotRef}
           style={{
-            width: isHovered ? star.size * 3.5 : star.size * 2,
-            height: isHovered ? star.size * 3.5 : star.size * 2,
+            width: isHovered ? baseSize * (isMobile ? 2.8 : 3.5) : baseSize * (isMobile ? 1.6 : 2),
+            height: isHovered ? baseSize * (isMobile ? 2.8 : 3.5) : baseSize * (isMobile ? 1.6 : 2),
             borderRadius: "50%",
             background: cfg.color,
             boxShadow: isHovered
-              ? `0 0 ${star.size * 4}px ${cfg.color}, 0 0 ${star.size * 8}px ${cfg.glow}`
-              : `0 0 ${star.size * 2}px ${cfg.color}bb`,
+              ? `0 0 ${baseSize * 3}px ${cfg.color}, 0 0 ${baseSize * 6}px ${cfg.glow}`
+              : `0 0 ${baseSize * 1.5}px ${cfg.color}bb`,
             animation: isHovered ? "none" : `${animName} ${star.twinkleSpeed}s ${star.twinkleOffset}s ease-in-out infinite`,
             transition: "width 0.2s, height 0.2s, box-shadow 0.2s",
             flexShrink: 0,
-            position: "relative",
             zIndex: 2,
           }}
         />
 
-        {/* Cross sparkle for larger stars */}
-        {star.size > 4.5 && !isHovered && (
+        {baseSize > 4 && !isHovered && (
           <div style={{ position: "absolute", pointerEvents: "none" }}>
-            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: star.size * 10, height: 0.7, background: `linear-gradient(90deg,transparent,${cfg.color}60,transparent)` }} />
-            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%) rotate(90deg)", width: star.size * 10, height: 0.7, background: `linear-gradient(90deg,transparent,${cfg.color}60,transparent)` }} />
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: baseSize * 10, height: 0.7, background: `linear-gradient(90deg,transparent,${cfg.color}60,transparent)` }} />
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%) rotate(90deg)", width: baseSize * 10, height: 0.7, background: `linear-gradient(90deg,transparent,${cfg.color}60,transparent)` }} />
           </div>
         )}
 
-        {/* Icon + label — shown on hover */}
         <div style={{
           position: "absolute",
           top: "100%",
@@ -370,11 +379,10 @@ const SkillStar: React.FC<SkillStarProps> = ({ star, isHovered, isOtherHovered, 
           </div>
         </div>
 
-        {/* Skill name label — always faintly visible */}
         <div style={{
           position: "absolute",
-          top: `calc(100% + ${star.size + 4}px)`,
-          fontSize: 10,
+          top: `calc(100% + ${baseSize + 4}px)`,
+          fontSize: isMobile ? 9 : 10,
           fontFamily: "'Plus Jakarta Sans', sans-serif",
           color: isHovered ? "#fff" : "rgba(255,255,255,0.35)",
           whiteSpace: "nowrap",
@@ -391,25 +399,27 @@ const SkillStar: React.FC<SkillStarProps> = ({ star, isHovered, isOtherHovered, 
 };
 
 /* ─────────────────────────────────────────
-   LEGEND
+   LEGEND (responsively wrapped, touch-friendly)
 ───────────────────────────────────────── */
 const Legend: React.FC<{ activeFilter: string | null; onFilter: (cat: string | null) => void }> = ({ activeFilter, onFilter }) => (
-  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", padding: "0 4px" }}>
     {Object.entries(CAT_CONFIG).map(([cat, cfg]) => (
       <button
         key={cat}
         onClick={() => onFilter(activeFilter === cat ? null : cat)}
         style={{
           display: "flex", alignItems: "center", gap: 5,
-          padding: "4px 12px", borderRadius: 99,
+          padding: "6px 14px", borderRadius: 99,
           background: activeFilter === cat ? cfg.badge : "rgba(255,255,255,0.04)",
           border: `1px solid ${activeFilter === cat ? cfg.color + "60" : "rgba(255,255,255,0.08)"}`,
           color: activeFilter === cat ? cfg.badgeText : "rgba(255,255,255,0.45)",
-          fontSize: 11, fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontSize: "clamp(10px, 3vw, 11px)",
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
           cursor: "pointer", transition: "all 0.18s", letterSpacing: "0.02em",
+          touchAction: "manipulation",
         }}
       >
-        <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
         {cat}
       </button>
     ))}
@@ -417,9 +427,8 @@ const Legend: React.FC<{ activeFilter: string | null; onFilter: (cat: string | n
 );
 
 /* ─────────────────────────────────────────
-   MAIN SKILLS COMPONENT
+   HELPER: seeded random
 ───────────────────────────────────────── */
-
 function seededRandom(seed: number) {
   const x = Math.sin(seed + 1) * 10000;
   return x - Math.floor(x);
@@ -427,7 +436,7 @@ function seededRandom(seed: number) {
 
 function generateStarPositions(skills: SkillDef[]): StarData[] {
   const placed: { x: number; y: number }[] = [];
-  const MIN_DIST = 9; // percent
+  const MIN_DIST = window.innerWidth < 768 ? 6 : 9; // Allow denser on mobile
 
   return skills.map((skill, i) => {
     const cfg = CAT_CONFIG[skill.category] || CAT_CONFIG.AI;
@@ -439,11 +448,15 @@ function generateStarPositions(skills: SkillDef[]): StarData[] {
     } while (tries < 60 && placed.some(p => Math.hypot(p.x - x, p.y - y) < MIN_DIST));
     placed.push({ x, y });
 
+    // Adjust size based on screen width
+    const baseSize = 3 + seededRandom(i * 17) * 3;
+    const size = window.innerWidth < 768 ? Math.min(baseSize, 4.5) : baseSize;
+
     return {
       id: i,
       skill,
       x, y,
-      size: 3 + seededRandom(i * 17) * 3,
+      size,
       twinkleSpeed: 2.5 + seededRandom(i * 11) * 3,
       twinkleOffset: seededRandom(i * 19) * 2,
       color: cfg.color,
@@ -451,6 +464,9 @@ function generateStarPositions(skills: SkillDef[]): StarData[] {
   });
 }
 
+/* ─────────────────────────────────────────
+   MAIN SKILLS COMPONENT (Fully Responsive + Touch)
+───────────────────────────────────────── */
 export const Skills: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05, rootMargin: "60px" });
@@ -458,6 +474,12 @@ export const Skills: React.FC = () => {
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [containerSize, setContainerSize] = useState({ w: 800, h: 480 });
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  // Detect touch device for better UX
+  useEffect(() => {
+    setIsTouchDevice(('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+  }, []);
 
   const stars = useMemo(() => generateStarPositions(skillsData), []);
 
@@ -482,12 +504,21 @@ export const Skills: React.FC = () => {
     if (id !== null) setTooltipPos({ x, y });
   }, []);
 
+  const handleTouch = useCallback((id: number | null, e: React.TouchEvent) => {
+    // On touch, keep tooltip visible for 2 seconds then auto-hide
+    if (id !== null) {
+      setTimeout(() => {
+        setHoveredId(prev => (prev === id ? null : prev));
+      }, 2000);
+    }
+  }, []);
+
   const hoveredStar = hoveredId !== null ? stars.find(s => s.id === hoveredId) : null;
 
-  // Spotlight effect
+  // Spotlight effect (mouse only)
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || isTouchDevice) return;
     const onMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -497,11 +528,16 @@ export const Skills: React.FC = () => {
     };
     el.addEventListener("mousemove", onMove);
     return () => el.removeEventListener("mousemove", onMove);
-  }, []);
+  }, [isTouchDevice]);
 
   return (
     <section
-      style={{ background: "#03060F", padding: "5rem 1.5rem", position: "relative", overflow: "hidden" }}
+      style={{
+        background: "#03060F",
+        padding: "clamp(3rem, 6vw, 5rem) clamp(1rem, 4vw, 1.5rem)",
+        position: "relative",
+        overflow: "hidden",
+      }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
@@ -515,7 +551,7 @@ export const Skills: React.FC = () => {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           style={{
             fontFamily: "'Syne', sans-serif",
-            fontSize: "clamp(1.8rem, 4vw, 2.6rem)",
+            fontSize: "clamp(1.8rem, 5vw, 2.6rem)",
             fontWeight: 800,
             textAlign: "center",
             marginBottom: "0.4rem",
@@ -535,11 +571,11 @@ export const Skills: React.FC = () => {
           transition={{ delay: 0.2, duration: 0.6 }}
           style={{
             textAlign: "center", color: "rgba(255,255,255,0.3)",
-            fontSize: 12, letterSpacing: "0.12em", marginBottom: "1.5rem",
+            fontSize: "clamp(10px, 3vw, 12px)", letterSpacing: "0.12em", marginBottom: "1.5rem",
             fontFamily: "'Plus Jakarta Sans', sans-serif", textTransform: "uppercase",
           }}
         >
-          Hover any star to explore
+          {isTouchDevice ? "Tap any star to explore" : "Hover any star to explore"}
         </motion.p>
 
         {/* Legend / Filter */}
@@ -547,7 +583,7 @@ export const Skills: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.3, duration: 0.5 }}
-          style={{ marginBottom: "1.25rem" }}
+          style={{ marginBottom: "clamp(1rem, 3vw, 1.25rem)" }}
         >
           <Legend activeFilter={activeFilter} onFilter={setActiveFilter} />
         </motion.div>
@@ -562,25 +598,25 @@ export const Skills: React.FC = () => {
           style={{
             position: "relative",
             width: "100%",
-            height: "clamp(380px, 50vw, 500px)",
+            height: "clamp(380px, 55vw, 500px)",
             borderRadius: 16,
             background: "#03060F",
             border: "1px solid rgba(255,255,255,0.06)",
             overflow: "hidden",
           }}
         >
-          {/* Animated background */}
           <BackgroundCanvas containerRef={containerRef} />
 
-          {/* Spotlight */}
-          <div
-            style={{
-              position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none",
-              background: "radial-gradient(500px circle at var(--spot-x,50%) var(--spot-y,50%), rgba(110,231,183,0.04) 0%, transparent 65%)",
-            }}
-          />
+          {/* Spotlight (hidden on touch) */}
+          {!isTouchDevice && (
+            <div
+              style={{
+                position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none",
+                background: "radial-gradient(500px circle at var(--spot-x,50%) var(--spot-y,50%), rgba(110,231,183,0.04) 0%, transparent 65%)",
+              }}
+            />
+          )}
 
-          {/* Stars */}
           <div style={{ position: "absolute", inset: 0, zIndex: 3 }}>
             <AnimatePresence>
               {visibleStars.map(star => (
@@ -590,12 +626,12 @@ export const Skills: React.FC = () => {
                   isHovered={hoveredId === star.id}
                   isOtherHovered={hoveredId !== null && hoveredId !== star.id}
                   onHover={handleHover}
+                  onTouch={handleTouch}
                 />
               ))}
             </AnimatePresence>
           </div>
 
-          {/* Tooltip */}
           <AnimatePresence>
             {hoveredStar && (
               <SkillTooltip
@@ -609,7 +645,6 @@ export const Skills: React.FC = () => {
             )}
           </AnimatePresence>
 
-          {/* Bottom fade */}
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0, height: 40, zIndex: 4, pointerEvents: "none",
             background: "linear-gradient(to top, #03060F 0%, transparent 100%)",
@@ -622,7 +657,7 @@ export const Skills: React.FC = () => {
           animate={inView ? { opacity: 1 } : {}}
           transition={{ delay: 0.6, duration: 0.5 }}
           style={{
-            textAlign: "center", fontSize: 11, marginTop: "0.75rem",
+            textAlign: "center", fontSize: "clamp(10px, 3vw, 11px)", marginTop: "0.75rem",
             color: "rgba(255,255,255,0.2)",
             fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: "0.08em",
           }}

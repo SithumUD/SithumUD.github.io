@@ -9,20 +9,25 @@ import {
 } from "react-icons/si";
 
 /* ══════════════════════════════════════════
-   STARFIELD CANVAS
+   STARFIELD CANVAS (Responsive)
 ══════════════════════════════════════════ */
 const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const raf = useRef(0);
 
-  const stars = useMemo(() => Array.from({ length: 200 }, () => ({
-    x: Math.random(), y: Math.random(),
-    r: Math.random() * 1.3 + 0.2,
-    a: Math.random() * 0.65 + 0.15,
-    ts: 0.004 + Math.random() * 0.009,
-    to: Math.random() * Math.PI * 2,
-    col: Math.random() > 0.85 ? (Math.random() > 0.5 ? "#93C5FD" : "#C4B5FD") : "#ffffff",
-  })), []);
+  // Reduced star count on mobile for performance
+  const stars = useMemo(() => {
+    const isMobile = window.innerWidth < 768;
+    const count = isMobile ? 120 : 200;
+    return Array.from({ length: count }, () => ({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.3 + 0.2,
+      a: Math.random() * 0.65 + 0.15,
+      ts: 0.004 + Math.random() * 0.009,
+      to: Math.random() * Math.PI * 2,
+      col: Math.random() > 0.85 ? (Math.random() > 0.5 ? "#93C5FD" : "#C4B5FD") : "#ffffff",
+    }));
+  }, []);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -82,13 +87,13 @@ const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
 };
 
 /* ══════════════════════════════════════════
-   ORBIT RING SVG (decorative, animated)
+   ORBIT RING SVG (decorative, animated) — Responsive
 ══════════════════════════════════════════ */
 const OrbitRing: React.FC<{ size: number; speed: number; color: string; dotColor: string; reverse?: boolean }> = ({
   size, speed, color, dotColor, reverse = false,
 }) => (
   <div style={{
-    position: "absolute", width: size, height: size,
+    position: "absolute", width: `${size}%`, height: `${size}%`,
     borderRadius: "50%",
     border: `1px solid ${color}`,
     top: "50%", left: "50%",
@@ -97,7 +102,8 @@ const OrbitRing: React.FC<{ size: number; speed: number; color: string; dotColor
   }}>
     <div style={{
       position: "absolute", top: -4, left: "50%", transform: "translateX(-50%)",
-      width: 7, height: 7, borderRadius: "50%",
+      width: "clamp(5px, 1.5vw, 7px)", height: "clamp(5px, 1.5vw, 7px)",
+      borderRadius: "50%",
       background: dotColor,
       boxShadow: `0 0 10px ${dotColor}`,
     }} />
@@ -105,14 +111,20 @@ const OrbitRing: React.FC<{ size: number; speed: number; color: string; dotColor
 );
 
 /* ══════════════════════════════════════════
-   ASTRONAUT AVATAR
+   ASTRONAUT AVATAR (Fully Responsive)
 ══════════════════════════════════════════ */
 const AstronautAvatar: React.FC = () => (
-  <div style={{ position: "relative", width: 200, height: 200, flexShrink: 0 }}>
-    {/* Orbit rings */}
-    <OrbitRing size={190} speed={14} color="rgba(110,231,183,0.15)" dotColor="#6EE7B7" />
-    <OrbitRing size={150} speed={9}  color="rgba(56,189,248,0.12)"  dotColor="#38BDF8" reverse />
-    <OrbitRing size={110} speed={20} color="rgba(196,181,253,0.1)"  dotColor="#C4B5FD" />
+  <div className="astro-avatar-container" style={{
+    position: "relative",
+    width: "min(180px, 40vw)",
+    aspectRatio: "1 / 1",
+    flexShrink: 0,
+    margin: "0 auto",
+  }}>
+    {/* Orbit rings — sizes are percentages of parent */}
+    <OrbitRing size={95} speed={14} color="rgba(110,231,183,0.15)" dotColor="#6EE7B7" />
+    <OrbitRing size={80} speed={9}  color="rgba(56,189,248,0.12)" dotColor="#38BDF8" reverse />
+    <OrbitRing size={65} speed={20} color="rgba(196,181,253,0.1)"  dotColor="#C4B5FD" />
 
     {/* Core circle */}
     <div style={{
@@ -120,14 +132,14 @@ const AstronautAvatar: React.FC = () => (
       alignItems: "center", justifyContent: "center",
     }}>
       <div style={{
-        width: 90, height: 90, borderRadius: "50%",
+        width: "50%", height: "50%", borderRadius: "50%",
         background: "radial-gradient(circle at 35% 35%, rgba(110,231,183,0.2), rgba(3,6,15,0.9))",
         border: "1.5px solid rgba(110,231,183,0.3)",
         display: "flex", alignItems: "center", justifyContent: "center",
         boxShadow: "0 0 30px rgba(110,231,183,0.15), inset 0 0 30px rgba(0,0,0,0.6)",
       }}>
-        {/* Astronaut SVG icon */}
-        <svg width="46" height="46" viewBox="0 0 64 64" fill="none">
+        {/* Astronaut SVG icon — responsive */}
+        <svg width="50%" height="50%" viewBox="0 0 64 64" fill="none" style={{ maxWidth: 46, maxHeight: 46 }}>
           {/* Helmet */}
           <circle cx="32" cy="22" r="14" fill="rgba(110,231,183,0.15)" stroke="rgba(110,231,183,0.6)" strokeWidth="1.5"/>
           {/* Visor */}
@@ -164,8 +176,8 @@ const LogEntry: React.FC<{ index: number; text: React.ReactNode; icon: string; d
     animate={inView ? { opacity: 1, x: 0 } : {}}
     transition={{ delay, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     style={{
-      display: "flex", gap: 12, alignItems: "flex-start",
-      padding: "12px 14px",
+      display: "flex", gap: "clamp(8px, 2.5vw, 12px)", alignItems: "flex-start",
+      padding: "clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 14px)",
       borderRadius: 8,
       background: "rgba(110,231,183,0.025)",
       border: "1px solid rgba(110,231,183,0.08)",
@@ -173,25 +185,25 @@ const LogEntry: React.FC<{ index: number; text: React.ReactNode; icon: string; d
       overflow: "hidden",
     }}
   >
-    {/* Left accent bar */}
     <div style={{
       position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
       background: "linear-gradient(to bottom, transparent, rgba(110,231,183,0.5), transparent)",
     }} />
-    {/* Line number */}
     <span style={{
-      fontSize: 9, fontFamily: "'Plus Jakarta Sans', sans-serif",
+      fontSize: "clamp(8px, 2.5vw, 9px)", fontFamily: "'Plus Jakarta Sans', sans-serif",
       color: "rgba(110,231,183,0.25)", letterSpacing: "0.1em",
-      marginTop: 1, flexShrink: 0, minWidth: 20, userSelect: "none",
+      marginTop: 1, flexShrink: 0, minWidth: "clamp(18px, 5vw, 20px)",
+      userSelect: "none",
     }}>
       {String(index + 1).padStart(2, "0")}
     </span>
-    <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>{icon}</span>
+    <span style={{ fontSize: "clamp(14px, 4vw, 15px)", lineHeight: 1, flexShrink: 0, marginTop: 1 }}>{icon}</span>
     <p style={{
-      fontSize: 13, lineHeight: 1.65,
+      fontSize: "clamp(11px, 3.5vw, 13px)", lineHeight: 1.5,
       color: "rgba(255,255,255,0.45)",
       fontFamily: "'Plus Jakarta Sans', sans-serif",
       margin: 0,
+      wordBreak: "break-word",
     }}>
       {text}
     </p>
@@ -199,7 +211,7 @@ const LogEntry: React.FC<{ index: number; text: React.ReactNode; icon: string; d
 );
 
 /* ══════════════════════════════════════════
-   CAPABILITY CARD — hexagonal skill chip
+   CAPABILITY CARD — hexagonal skill chip (Responsive)
 ══════════════════════════════════════════ */
 interface CapabilityProps {
   icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
@@ -221,7 +233,7 @@ const CapabilityCard: React.FC<CapabilityProps> = ({ icon: Icon, name, sub, colo
       onMouseLeave={() => setHov(false)}
       style={{
         position: "relative",
-        padding: "14px 12px",
+        padding: "clamp(12px, 2.5vw, 14px) clamp(10px, 2vw, 12px)",
         borderRadius: 10,
         background: hov
           ? `linear-gradient(135deg, ${color}14, ${color}06)`
@@ -231,12 +243,11 @@ const CapabilityCard: React.FC<CapabilityProps> = ({ icon: Icon, name, sub, colo
         transition: "all 0.22s ease",
         cursor: "default",
         display: "flex", flexDirection: "column", alignItems: "center",
-        gap: 8, textAlign: "center",
+        gap: "clamp(6px, 2vw, 8px)", textAlign: "center",
         transform: hov ? "translateY(-3px)" : "none",
         overflow: "hidden",
       }}
     >
-      {/* Shimmer */}
       {hov && (
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
@@ -244,34 +255,33 @@ const CapabilityCard: React.FC<CapabilityProps> = ({ icon: Icon, name, sub, colo
           animation: "shimmer 0.55s ease-in-out forwards",
         }} />
       )}
-      {/* Icon circle */}
       <div style={{
-        width: 44, height: 44, borderRadius: "50%",
+        width: "clamp(38px, 10vw, 44px)", height: "clamp(38px, 10vw, 44px)", borderRadius: "50%",
         background: `${color}12`,
         border: `1.5px solid ${color}35`,
         display: "flex", alignItems: "center", justifyContent: "center",
         boxShadow: hov ? `0 0 14px ${color}40` : "none",
         transition: "box-shadow 0.2s",
       }}>
-        <Icon size={22} style={{ color }} />
+        <Icon size="clamp(18px, 5vw, 22px)" style={{ color }} />
       </div>
       <div>
         <div style={{
-          fontSize: 12, fontWeight: 600,
+          fontSize: "clamp(11px, 3vw, 12px)", fontWeight: 600,
           color: "rgba(255,255,255,0.85)",
           fontFamily: "'Plus Jakarta Sans', sans-serif",
           lineHeight: 1.3,
         }}>{name}</div>
         <div style={{
-          fontSize: 10, color: `${color}bb`,
+          fontSize: "clamp(9px, 2.5vw, 10px)", color: `${color}bb`,
           fontFamily: "'Plus Jakarta Sans', sans-serif",
           marginTop: 2, letterSpacing: "0.04em",
         }}>{sub}</div>
       </div>
-      {/* Status dot */}
       <div style={{
         position: "absolute", top: 8, right: 8,
-        width: 5, height: 5, borderRadius: "50%",
+        width: "clamp(4px, 1.5vw, 5px)", height: "clamp(4px, 1.5vw, 5px)",
+        borderRadius: "50%",
         background: color,
         boxShadow: `0 0 6px ${color}`,
         opacity: hov ? 1 : 0.3,
@@ -282,7 +292,7 @@ const CapabilityCard: React.FC<CapabilityProps> = ({ icon: Icon, name, sub, colo
 };
 
 /* ══════════════════════════════════════════
-   STAT BADGE
+   STAT BADGE (Responsive)
 ══════════════════════════════════════════ */
 const StatBadge: React.FC<{ value: string; label: string; color: string; delay: number; inView: boolean }> = ({
   value, label, color, delay, inView,
@@ -293,28 +303,29 @@ const StatBadge: React.FC<{ value: string; label: string; color: string; delay: 
     transition={{ delay, duration: 0.4, type: "spring", stiffness: 120 }}
     style={{
       display: "flex", flexDirection: "column", alignItems: "center",
-      padding: "10px 16px", borderRadius: 10,
+      padding: "clamp(8px, 2vw, 10px) clamp(12px, 3vw, 16px)", borderRadius: 10,
       background: `${color}0d`,
       border: `1px solid ${color}25`,
     }}
   >
     <span style={{
-      fontSize: 22, fontWeight: 800,
+      fontSize: "clamp(18px, 5vw, 22px)", fontWeight: 800,
       fontFamily: "'Syne', sans-serif",
       color,
       lineHeight: 1,
     }}>{value}</span>
     <span style={{
-      fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase",
+      fontSize: "clamp(8px, 2.5vw, 9px)", letterSpacing: "0.12em", textTransform: "uppercase",
       color: "rgba(255,255,255,0.3)",
       fontFamily: "'Plus Jakarta Sans', sans-serif",
       marginTop: 4,
+      textAlign: "center",
     }}>{label}</span>
   </motion.div>
 );
 
 /* ══════════════════════════════════════════
-   ABOUT COMPONENT
+   ABOUT COMPONENT (Fully Mobile Responsive)
 ══════════════════════════════════════════ */
 export const About: React.FC = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
@@ -384,7 +395,12 @@ export const About: React.FC = () => {
 
   return (
     <section
-      style={{ background: "#03060F", padding: "5rem 1.5rem", position: "relative", overflow: "hidden" }}
+      style={{
+        background: "#03060F",
+        padding: "clamp(3rem, 8vw, 5rem) clamp(1rem, 4vw, 1.5rem)",
+        position: "relative",
+        overflow: "hidden",
+      }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
@@ -396,6 +412,66 @@ export const About: React.FC = () => {
           100% { transform: scale(1.6); opacity: 0   }
         }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        /* Responsive grid */
+        .about-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: clamp(2rem, 5vw, 3rem);
+          align-items: start;
+        }
+        @media (min-width: 768px) {
+          .about-grid {
+            grid-template-columns: 1fr 1.15fr;
+            gap: 3rem;
+          }
+        }
+
+        /* Avatar + stats row */
+        .avatar-stats-row {
+          display: flex;
+          gap: clamp(1rem, 4vw, 1.5rem);
+          align-items: center;
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .stats-badge-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          flex: 1;
+          min-width: 130px;
+        }
+        @media (max-width: 480px) {
+          .stats-badge-group {
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+          }
+          .stats-badge-group > div {
+            flex: 1 1 auto;
+            min-width: 90px;
+          }
+        }
+
+        /* Capabilities grid */
+        .capabilities-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: clamp(8px, 2vw, 10px);
+        }
+        @media (max-width: 380px) {
+          .capabilities-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+
+        /* Mission log */
+        .mission-log {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
       `}</style>
 
       <StarfieldCanvas mx={mouse.x} my={mouse.y} />
@@ -413,7 +489,7 @@ export const About: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          style={{ marginBottom: "3rem" }}
+          style={{ marginBottom: "clamp(2rem, 6vw, 3rem)", textAlign: "center" }}
         >
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 8,
@@ -429,7 +505,7 @@ export const About: React.FC = () => {
               display: "inline-block",
             }} />
             <span style={{
-              fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase",
+              fontSize: "clamp(9px, 2.5vw, 10px)", letterSpacing: "0.2em", textTransform: "uppercase",
               color: "rgba(110,231,183,0.7)", fontFamily: "'Plus Jakarta Sans', sans-serif",
               fontWeight: 600,
             }}>CREW FILE · CLASSIFICATION: PUBLIC</span>
@@ -437,7 +513,7 @@ export const About: React.FC = () => {
 
           <h2 style={{
             fontFamily: "'Syne', sans-serif",
-            fontSize: "clamp(1.8rem,4vw,2.6rem)",
+            fontSize: "clamp(1.8rem, 5vw, 2.6rem)",
             fontWeight: 800,
             letterSpacing: "-0.025em",
             background: "linear-gradient(135deg,#6EE7B7 0%,#38BDF8 50%,#C4B5FD 100%)",
@@ -451,21 +527,15 @@ export const About: React.FC = () => {
         </motion.div>
 
         {/* ── MAIN GRID ── */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) minmax(0,1.15fr)",
-          gap: "3rem",
-          alignItems: "start",
-        }}
-          className="about-grid"
-        >
+        <div className="about-grid">
+
           {/* ── LEFT COLUMN ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "clamp(1.5rem, 4vw, 2rem)" }}>
 
             {/* Avatar + stats row */}
-            <div style={{ display: "flex", gap: "1.5rem", alignItems: "center", flexWrap: "wrap" }}>
+            <div className="avatar-stats-row">
               <AstronautAvatar />
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 130 }}>
+              <div className="stats-badge-group">
                 <StatBadge value="3+" label="Years active"   color="#6EE7B7" delay={0.3} inView={inView} />
                 <StatBadge value="10+" label="Projects built" color="#38BDF8" delay={0.4} inView={inView} />
                 <StatBadge value="8"  label="Core systems"   color="#C4B5FD" delay={0.5} inView={inView} />
@@ -480,14 +550,14 @@ export const About: React.FC = () => {
               }}>
                 <div style={{ flex: 1, height: "1px", background: "rgba(110,231,183,0.1)" }} />
                 <span style={{
-                  fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase",
+                  fontSize: "clamp(8px, 2.5vw, 9px)", letterSpacing: "0.2em", textTransform: "uppercase",
                   color: "rgba(110,231,183,0.35)", fontFamily: "'Plus Jakarta Sans', sans-serif",
                   fontWeight: 600,
                 }}>MISSION LOG</span>
                 <div style={{ flex: 1, height: "1px", background: "rgba(110,231,183,0.1)" }} />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="mission-log">
                 {logEntries.map((entry, i) => (
                   <LogEntry
                     key={i}
@@ -509,17 +579,13 @@ export const About: React.FC = () => {
             }}>
               <div style={{ flex: 1, height: "1px", background: "rgba(110,231,183,0.1)" }} />
               <span style={{
-                fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase",
+                fontSize: "clamp(8px, 2.5vw, 9px)", letterSpacing: "0.2em", textTransform: "uppercase",
                 color: "rgba(110,231,183,0.35)", fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600,
               }}>ONBOARD SYSTEMS</span>
               <div style={{ flex: 1, height: "1px", background: "rgba(110,231,183,0.1)" }} />
             </div>
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(130px,1fr))",
-              gap: 10,
-            }}>
+            <div className="capabilities-grid">
               {capabilities.map((cap, idx) => (
                 <CapabilityCard
                   key={cap.name}
@@ -536,12 +602,13 @@ export const About: React.FC = () => {
               animate={inView ? { opacity: 1 } : {}}
               transition={{ delay: 0.9, duration: 0.6 }}
               style={{
-                marginTop: 20,
-                padding: "12px 16px",
+                marginTop: "clamp(18px, 4vw, 20px)",
+                padding: "clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 16px)",
                 borderRadius: 8,
                 background: "rgba(110,231,183,0.03)",
                 border: "1px solid rgba(110,231,183,0.08)",
-                display: "flex", alignItems: "center", gap: 10,
+                display: "flex", alignItems: "center", gap: "clamp(8px, 2vw, 10px)",
+                flexWrap: "wrap",
               }}
             >
               <div style={{
@@ -550,9 +617,10 @@ export const About: React.FC = () => {
                 animation: "blink 1.8s ease-in-out infinite", flexShrink: 0,
               }} />
               <p style={{
-                fontSize: 11, color: "rgba(255,255,255,0.3)",
+                fontSize: "clamp(10px, 2.5vw, 11px)", color: "rgba(255,255,255,0.3)",
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
                 margin: 0, lineHeight: 1.5, letterSpacing: "0.03em",
+                flex: 1,
               }}>
                 All systems operational · Open to new missions &amp; collaborations ·{" "}
                 <span style={{ color: "rgba(110,231,183,0.5)" }}>Let's build something amazing together</span>
@@ -561,13 +629,6 @@ export const About: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Responsive grid collapse */}
-      <style>{`
-        @media (max-width: 768px) {
-          .about-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </section>
   );
 };

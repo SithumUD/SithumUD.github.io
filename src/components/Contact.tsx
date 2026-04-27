@@ -5,12 +5,13 @@ import emailjs from "emailjs-com";
 import { FileText } from "lucide-react";
 
 /* ══════════════════════════════════════════
-   BACKGROUND STARFIELD CANVAS
+   BACKGROUND STARFIELD CANVAS (responsive)
 ══════════════════════════════════════════ */
 const StarfieldCanvas = () => {
   const ref = useRef<HTMLCanvasElement>(null);
   const raf = useRef(0);
   const mouseRef = useRef({ x: 0.5, y: 0.5 });
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
@@ -20,14 +21,17 @@ const StarfieldCanvas = () => {
     return () => window.removeEventListener("mousemove", onMouseMove);
   }, []);
 
-  const stars = useMemo(() => Array.from({ length: 130 }, () => ({
-    x: Math.random(), y: Math.random(),
-    r: Math.random() * 1.2 + 0.2,
-    a: Math.random() * 0.55 + 0.1,
-    ts: 0.004 + Math.random() * 0.009,
-    to: Math.random() * Math.PI * 2,
-    col: Math.random() > 0.85 ? (Math.random() > 0.5 ? "#93C5FD" : "#C4B5FD") : "#ffffff",
-  })), []);
+  const stars = useMemo(() => {
+    const count = isMobile ? 70 : 130;
+    return Array.from({ length: count }, () => ({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.2 + 0.2,
+      a: Math.random() * 0.55 + 0.1,
+      ts: 0.004 + Math.random() * 0.009,
+      to: Math.random() * Math.PI * 2,
+      col: Math.random() > 0.85 ? (Math.random() > 0.5 ? "#93C5FD" : "#C4B5FD") : "#ffffff",
+    }));
+  }, [isMobile]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -88,12 +92,25 @@ const StarfieldCanvas = () => {
 };
 
 /* ══════════════════════════════════════════
-   SIGNAL WAVEFORM
+   SIGNAL WAVEFORM (responsive canvas)
 ══════════════════════════════════════════ */
 const SignalWaveform: React.FC<{ active: boolean; messageLength: number }> = ({ active, messageLength }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const tRef = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canvasWidth, setCanvasWidth] = useState(400);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setCanvasWidth(containerRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -125,15 +142,17 @@ const SignalWaveform: React.FC<{ active: boolean; messageLength: number }> = ({ 
     };
     draw();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [active, messageLength]);
+  }, [active, messageLength, canvasWidth]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={400}
-      height={40}
-      style={{ width: "100%", height: 40, display: "block" }}
-    />
+    <div ref={containerRef} style={{ width: "100%" }}>
+      <canvas
+        ref={canvasRef}
+        width={canvasWidth}
+        height={40}
+        style={{ width: "100%", height: 40, display: "block" }}
+      />
+    </div>
   );
 };
 
@@ -163,7 +182,7 @@ const LaunchBeam: React.FC<{ trigger: boolean }> = ({ trigger }) => {
 };
 
 /* ══════════════════════════════════════════
-   HUD FIELD
+   HUD FIELD (responsive)
 ══════════════════════════════════════════ */
 interface HUDFieldProps {
   label: string;
@@ -177,9 +196,11 @@ const HUDField: React.FC<HUDFieldProps> = ({ label, coord, children, focused }) 
     <div style={{
       display: "flex", justifyContent: "space-between", alignItems: "center",
       marginBottom: 6,
+      flexWrap: "wrap",
+      gap: 4,
     }}>
       <label style={{
-        fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase",
+        fontSize: "clamp(9px, 3vw, 10px)", letterSpacing: "0.18em", textTransform: "uppercase",
         color: focused ? "#6EE7B7" : "rgba(110,231,183,0.4)",
         fontFamily: "'Plus Jakarta Sans', sans-serif",
         fontWeight: 600,
@@ -195,7 +216,7 @@ const HUDField: React.FC<HUDFieldProps> = ({ label, coord, children, focused }) 
         {label}
       </label>
       <span style={{
-        fontSize: 9, letterSpacing: "0.14em",
+        fontSize: "clamp(8px, 2.5vw, 9px)", letterSpacing: "0.14em",
         color: "rgba(255,255,255,0.15)",
         fontFamily: "'Plus Jakarta Sans', sans-serif",
       }}>{coord}</span>
@@ -209,7 +230,6 @@ const HUDField: React.FC<HUDFieldProps> = ({ label, coord, children, focused }) 
       transition: "all 0.2s",
       overflow: "hidden",
     }}>
-      {/* Corner accents */}
       {[
         { top: -1, left: -1, borderTop: `2px solid ${focused ? "#6EE7B7" : "rgba(110,231,183,0.3)"}`, borderLeft: `2px solid ${focused ? "#6EE7B7" : "rgba(110,231,183,0.3)"}` },
         { top: -1, right: -1, borderTop: `2px solid ${focused ? "#6EE7B7" : "rgba(110,231,183,0.3)"}`, borderRight: `2px solid ${focused ? "#6EE7B7" : "rgba(110,231,183,0.3)"}` },
@@ -224,11 +244,13 @@ const HUDField: React.FC<HUDFieldProps> = ({ label, coord, children, focused }) 
 );
 
 /* ══════════════════════════════════════════
-   SUCCESS TRANSMISSION CARD
+   SUCCESS TRANSMISSION CARD (responsive)
 ══════════════════════════════════════════ */
 const TransmissionSuccess: React.FC = () => {
   const txId = useMemo(() => `TX-${Date.now().toString(36).toUpperCase().slice(-6)}`, []);
   const ts   = useMemo(() => new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC", []);
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16, scale: 0.96 }}
@@ -240,25 +262,22 @@ const TransmissionSuccess: React.FC = () => {
         borderRadius: 12,
         background: "rgba(0,20,15,0.7)",
         backdropFilter: "blur(16px)",
-        padding: "28px 24px",
+        padding: "clamp(20px, 5vw, 28px) clamp(16px, 5vw, 24px)",
         textAlign: "center",
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* Scanline overlay */}
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none",
         background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(110,231,183,0.012) 3px, rgba(110,231,183,0.012) 4px)",
         borderRadius: 12,
       }} />
-      {/* Top accent line */}
       <div style={{
         position: "absolute", top: 0, left: "20%", right: "20%", height: 1,
         background: "linear-gradient(90deg, transparent, #6EE7B7, transparent)",
       }} />
 
-      {/* Pulsing orbit */}
       <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
         {[1, 2].map(i => (
           <motion.div key={i}
@@ -284,15 +303,16 @@ const TransmissionSuccess: React.FC = () => {
       </div>
 
       <div style={{
-        fontSize: 13, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase",
+        fontSize: "clamp(12px, 3.5vw, 13px)", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase",
         color: "#6EE7B7", fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: 6,
       }}>Signal Received</div>
-      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: 18 }}>
+      <div style={{ fontSize: "clamp(11px, 3vw, 12px)", color: "rgba(255,255,255,0.45)", fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: 18 }}>
         Transmission acknowledged — response incoming
       </div>
 
       <div style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8,
+        display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+        gap: 8,
         background: "rgba(0,0,0,0.25)", borderRadius: 8,
         border: "1px solid rgba(110,231,183,0.1)", padding: "12px 16px",
       }}>
@@ -303,8 +323,8 @@ const TransmissionSuccess: React.FC = () => {
           { label: "DESTINATION", value: "CONFIRMED", full: false },
         ].map((row) => (
           <div key={row.label} style={{ gridColumn: row.full ? "1 / -1" : undefined }}>
-            <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "rgba(110,231,183,0.4)", fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: 2 }}>{row.label}</div>
-            <div style={{ fontSize: 11, color: "#6EE7B7", fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}>{row.value}</div>
+            <div style={{ fontSize: "clamp(8px, 2.5vw, 9px)", letterSpacing: "0.14em", color: "rgba(110,231,183,0.4)", fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: 2 }}>{row.label}</div>
+            <div style={{ fontSize: "clamp(10px, 3vw, 11px)", color: "#6EE7B7", fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, wordBreak: "break-all" }}>{row.value}</div>
           </div>
         ))}
       </div>
@@ -313,7 +333,7 @@ const TransmissionSuccess: React.FC = () => {
 };
 
 /* ══════════════════════════════════════════
-   CONTACT COMPONENT
+   CONTACT COMPONENT (Fully Responsive)
 ══════════════════════════════════════════ */
 export const Contact: React.FC = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.08, rootMargin: "60px" });
@@ -322,11 +342,12 @@ export const Contact: React.FC = () => {
   const [focused, setFocused]     = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-  // Spotlight
+  // Spotlight (disable on mobile for performance)
   useEffect(() => {
     const el = sectionRef.current;
-    if (!el) return;
+    if (!el || isMobile) return;
     const onMove = (e: MouseEvent) => {
       const r = el.getBoundingClientRect();
       el.style.setProperty("--spot-x", `${((e.clientX - r.left) / r.width) * 100}%`);
@@ -334,7 +355,7 @@ export const Contact: React.FC = () => {
     };
     el.addEventListener("mousemove", onMove);
     return () => el.removeEventListener("mousemove", onMove);
-  }, []);
+  }, [isMobile]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormState(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -355,7 +376,6 @@ export const Contact: React.FC = () => {
       );
       setStatus("success");
       setFormState({ name: "", email: "", message: "" });
-      // no auto-reset — user can read the success card at leisure
     } catch {
       setStatus("error");
       setTimeout(() => setStatus("idle"), 6000);
@@ -364,20 +384,25 @@ export const Contact: React.FC = () => {
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
-    padding: "10px 14px",
+    padding: "clamp(8px, 2.5vw, 10px) clamp(12px, 3vw, 14px)",
     background: "transparent",
     outline: "none",
     border: "none",
     color: "rgba(255,255,255,0.9)",
     fontFamily: "'Plus Jakarta Sans', sans-serif",
-    fontSize: 13,
+    fontSize: "clamp(12px, 3.5vw, 13px)",
     caretColor: "#6EE7B7",
   };
 
   return (
     <section
       ref={sectionRef}
-      style={{ background: "#03060F", padding: "5rem 1.5rem", position: "relative", overflow: "hidden" }}
+      style={{
+        background: "#03060F",
+        padding: "clamp(3rem, 8vw, 5rem) clamp(1rem, 4vw, 1.5rem)",
+        position: "relative",
+        overflow: "hidden",
+      }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
@@ -390,55 +415,61 @@ export const Contact: React.FC = () => {
           0%   { transform: translateY(-100%) }
           100% { transform: translateY(100vh) }
         }
+        @keyframes shimmer {
+          0%   { transform: translateX(-100%) }
+          100% { transform: translateX(200%)  }
+        }
       `}</style>
 
       <StarfieldCanvas />
 
-      {/* Spotlight */}
-      <div style={{
-        position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none",
-        background: "radial-gradient(600px circle at var(--spot-x,50%) var(--spot-y,50%), rgba(110,231,183,0.05) 0%, transparent 65%)",
-      }} />
-
-      {/* Scanline sweep */}
-      <div style={{
-        position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", overflow: "hidden",
-      }}>
+      {/* Spotlight - hidden on mobile */}
+      {!isMobile && (
         <div style={{
-          position: "absolute", left: 0, right: 0, height: 120,
-          background: "linear-gradient(to bottom, transparent, rgba(110,231,183,0.018), transparent)",
-          animation: "scanline 8s linear infinite",
+          position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none",
+          background: "radial-gradient(600px circle at var(--spot-x,50%) var(--spot-y,50%), rgba(110,231,183,0.05) 0%, transparent 65%)",
         }} />
-      </div>
+      )}
 
-      <div ref={ref} style={{ position: "relative", zIndex: 10, maxWidth: 560, margin: "0 auto" }}>
+      {/* Scanline sweep - hidden on mobile */}
+      {!isMobile && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute", left: 0, right: 0, height: 120,
+            background: "linear-gradient(to bottom, transparent, rgba(110,231,183,0.018), transparent)",
+            animation: "scanline 8s linear infinite",
+          }} />
+        </div>
+      )}
+
+      <div ref={ref} style={{ position: "relative", zIndex: 10, maxWidth: 560, margin: "0 auto", width: "100%" }}>
 
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          style={{ textAlign: "center", marginBottom: "2.5rem" }}
+          style={{ textAlign: "center", marginBottom: "clamp(1.5rem, 5vw, 2.5rem)" }}
         >
-          {/* Orbit decoration */}
           <div style={{ display: "inline-flex", position: "relative", marginBottom: 20 }}>
             <div style={{
-              width: 56, height: 56, borderRadius: "50%",
+              width: "clamp(48px, 12vw, 56px)", height: "clamp(48px, 12vw, 56px)", borderRadius: "50%",
               border: "1px solid rgba(110,231,183,0.2)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <div style={{
-                width: 36, height: 36, borderRadius: "50%",
+                width: "clamp(30px, 8vw, 36px)", height: "clamp(30px, 8vw, 36px)", borderRadius: "50%",
                 background: "rgba(110,231,183,0.08)",
                 border: "1.5px solid rgba(110,231,183,0.4)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" strokeWidth="2" strokeLinecap="round">
+                <svg width="clamp(14px, 4vw, 16px)" height="clamp(14px, 4vw, 16px)" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" strokeWidth="2" strokeLinecap="round">
                   <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a2 2 0 012-2.18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.91 14a16 16 0 006.29 6.29l.86-.86a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
                 </svg>
               </div>
             </div>
-            {/* Orbiting dot */}
             <div style={{
               position: "absolute", inset: 0,
               animation: "spin-slow 6s linear infinite",
@@ -453,7 +484,7 @@ export const Contact: React.FC = () => {
           </div>
 
           <div style={{
-            fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase",
+            fontSize: "clamp(9px, 3vw, 10px)", letterSpacing: "0.3em", textTransform: "uppercase",
             color: "rgba(110,231,183,0.5)", fontFamily: "'Plus Jakarta Sans', sans-serif",
             fontWeight: 600, marginBottom: 10,
           }}>
@@ -462,7 +493,7 @@ export const Contact: React.FC = () => {
 
           <h2 style={{
             fontFamily: "'Syne', sans-serif",
-            fontSize: "clamp(1.9rem, 4.5vw, 2.8rem)",
+            fontSize: "clamp(1.8rem, 5vw, 2.8rem)",
             fontWeight: 800,
             letterSpacing: "-0.025em",
             background: "linear-gradient(135deg,#6EE7B7 0%,#38BDF8 55%,#C4B5FD 100%)",
@@ -475,7 +506,7 @@ export const Contact: React.FC = () => {
           </h2>
 
           <p style={{
-            marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.3)",
+            marginTop: 8, fontSize: "clamp(11px, 3vw, 12px)", color: "rgba(255,255,255,0.3)",
             fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: "0.04em",
           }}>
             Messages are routed securely across the void
@@ -495,33 +526,28 @@ export const Contact: React.FC = () => {
               transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               style={{ position: "relative" }}
             >
-              {/* Launch beam */}
               <LaunchBeam trigger={launching} />
 
-              {/* Panel border */}
               <div style={{
                 border: "1px solid rgba(110,231,183,0.1)",
                 borderRadius: 14,
                 background: "rgba(2,8,20,0.6)",
                 backdropFilter: "blur(20px)",
-                padding: "28px 24px",
+                padding: "clamp(20px, 5vw, 28px) clamp(16px, 5vw, 24px)",
                 position: "relative",
                 overflow: "hidden",
               }}>
-                {/* Scanlines on panel */}
                 <div style={{
                   position: "absolute", inset: 0, pointerEvents: "none", borderRadius: 14,
                   background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(110,231,183,0.008) 3px, rgba(110,231,183,0.008) 4px)",
                 }} />
-                {/* Top glow */}
                 <div style={{
                   position: "absolute", top: 0, left: "25%", right: "25%", height: 1,
                   background: "linear-gradient(90deg, transparent, rgba(110,231,183,0.4), transparent)",
                 }} />
 
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "clamp(16px, 4vw, 20px)" }}>
 
-                  {/* Name */}
                   <HUDField label="Sender ID" coord="[00]" focused={focused === "name"}>
                     <input
                       type="text" id="name" name="name" required
@@ -534,7 +560,6 @@ export const Contact: React.FC = () => {
                     />
                   </HUDField>
 
-                  {/* Email */}
                   <HUDField label="Return Vector" coord="[01]" focused={focused === "email"}>
                     <input
                       type="email" id="email" name="email" required
@@ -547,10 +572,9 @@ export const Contact: React.FC = () => {
                     />
                   </HUDField>
 
-                  {/* Message */}
                   <HUDField label="Transmission Payload" coord="[02]" focused={focused === "message"}>
                     <textarea
-                      id="message" name="message" required rows={5}
+                      id="message" name="message" required rows={isMobile ? 4 : 5}
                       placeholder="Your message..."
                       value={formState.message}
                       onChange={handleChange}
@@ -558,14 +582,13 @@ export const Contact: React.FC = () => {
                       onBlur={() => setFocused(null)}
                       style={{ ...inputStyle, paddingTop: 10, paddingBottom: 10 }}
                     />
-                    {/* Waveform */}
                     <div style={{
                       borderTop: "1px solid rgba(110,231,183,0.1)",
                       padding: "6px 8px 4px",
                       background: "rgba(0,0,0,0.2)",
                     }}>
                       <div style={{
-                        fontSize: 9, letterSpacing: "0.12em", color: "rgba(110,231,183,0.3)",
+                        fontSize: "clamp(8px, 2.5vw, 9px)", letterSpacing: "0.12em", color: "rgba(110,231,183,0.3)",
                         fontFamily: "'Plus Jakarta Sans', sans-serif",
                         marginBottom: 3,
                       }}>
@@ -578,13 +601,12 @@ export const Contact: React.FC = () => {
                     </div>
                   </HUDField>
 
-                  {/* Error */}
                   <AnimatePresence>
                     {status === "error" && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                         style={{
-                          fontSize: 12, color: "#F97316",
+                          fontSize: "clamp(11px, 3vw, 12px)", color: "#F97316",
                           background: "rgba(249,115,22,0.08)",
                           border: "1px solid rgba(249,115,22,0.25)",
                           borderRadius: 8, padding: "8px 12px",
@@ -598,15 +620,14 @@ export const Contact: React.FC = () => {
                     )}
                   </AnimatePresence>
 
-                  {/* Submit */}
                   <motion.button
                     type="submit"
                     disabled={status === "submitting"}
-                    whileHover={{ scale: 1.015 }}
+                    whileHover={{ scale: isMobile ? 1 : 1.015 }}
                     whileTap={{ scale: 0.975 }}
                     style={{
                       position: "relative",
-                      width: "100%", padding: "13px 20px",
+                      width: "100%", padding: "clamp(12px, 3.5vw, 13px) clamp(16px, 4vw, 20px)",
                       borderRadius: 10,
                       background: status === "submitting"
                         ? "rgba(110,231,183,0.06)"
@@ -615,7 +636,7 @@ export const Contact: React.FC = () => {
                       backdropFilter: "blur(10px)",
                       color: "#6EE7B7",
                       fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      fontSize: 13, fontWeight: 700,
+                      fontSize: "clamp(12px, 3.5vw, 13px)", fontWeight: 700,
                       letterSpacing: "0.12em", textTransform: "uppercase",
                       cursor: status === "submitting" ? "not-allowed" : "pointer",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
@@ -623,7 +644,6 @@ export const Contact: React.FC = () => {
                       transition: "all 0.2s",
                     }}
                   >
-                    {/* Button shimmer */}
                     <div style={{
                       position: "absolute", inset: 0,
                       background: "linear-gradient(90deg, transparent 30%, rgba(110,231,183,0.06) 50%, transparent 70%)",
@@ -657,24 +677,26 @@ export const Contact: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={inView ? { opacity: 1 } : {}}
           transition={{ delay: 0.5, duration: 0.6 }}
-          style={{ display: "flex", justifyContent: "center", marginTop: 20 }}
+          style={{ display: "flex", justifyContent: "center", marginTop: "clamp(16px, 4vw, 20px)" }}
         >
           <a
             href="/SITHUM UDAYANGA - CV.pdf"
             download
             style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 22px", borderRadius: 99,
+              display: "flex", alignItems: "center", gap: "clamp(8px, 2.5vw, 10px)",
+              padding: "clamp(8px, 2.5vw, 10px) clamp(16px, 4vw, 22px)", borderRadius: 99,
               background: "rgba(255,255,255,0.02)",
               border: "1px solid rgba(255,255,255,0.08)",
               backdropFilter: "blur(10px)",
               color: "rgba(255,255,255,0.4)",
               fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase",
+              fontSize: "clamp(10px, 3vw, 11px)", letterSpacing: "0.14em", textTransform: "uppercase",
               textDecoration: "none",
               transition: "all 0.2s",
+              touchAction: "manipulation",
             }}
             onMouseEnter={e => {
+              if (isMobile) return;
               const el = e.currentTarget;
               el.style.borderColor = "rgba(110,231,183,0.35)";
               el.style.color = "#6EE7B7";
@@ -682,6 +704,7 @@ export const Contact: React.FC = () => {
               el.style.boxShadow = "0 0 20px rgba(110,231,183,0.1)";
             }}
             onMouseLeave={e => {
+              if (isMobile) return;
               const el = e.currentTarget;
               el.style.borderColor = "rgba(255,255,255,0.08)";
               el.style.color = "rgba(255,255,255,0.4)";
@@ -689,10 +712,10 @@ export const Contact: React.FC = () => {
               el.style.boxShadow = "none";
             }}
           >
-            <FileText size={13} />
+            <FileText size={isMobile ? 12 : 13} />
             Access Mission Brief
             <span style={{
-              fontSize: 9, letterSpacing: "0.1em",
+              fontSize: "clamp(8px, 2.5vw, 9px)", letterSpacing: "0.1em",
               padding: "2px 6px", borderRadius: 4,
               background: "rgba(110,231,183,0.1)",
               border: "1px solid rgba(110,231,183,0.2)",
@@ -702,13 +725,6 @@ export const Contact: React.FC = () => {
         </motion.div>
 
       </div>
-
-      <style>{`
-        @keyframes shimmer {
-          0%   { transform: translateX(-100%) }
-          100% { transform: translateX(200%)  }
-        }
-      `}</style>
     </section>
   );
 };
