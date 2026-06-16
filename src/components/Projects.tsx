@@ -184,6 +184,14 @@ const projectsData = [
     liveUrl: "https://jobprepp.netlify.app/",
     githubUrl: "https://github.com/SithumUD/question-bank-web.git",
   },
+  {
+    id: 10,
+    title: "EduTrack Pro — School Management System",
+    description: "A full-featured school management system for managing students, teachers, attendance, exams, payroll, and fee payments with real-time notifications and automation.",
+    image: "edutrack.png",
+    technologies: ["Spring Boot", "React.js", "Keycloak", "SignalR", "JWT", "SQL Server"],
+    category: "web application",
+  },
 ];
 
 /* ══════════════════════════════════════════
@@ -374,11 +382,12 @@ const DossierPanel: React.FC<DossierPanelProps> = ({ project, locked }) => {
                   Live Demo
                 </a>
               )}
-              <a
-                href={project.githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
+              {project.githubUrl && (
+                <a
+                  href={project.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
                   display: "flex", alignItems: "center", gap: 5,
                   fontSize: "clamp(10px, 2.5vw, 11.5px)", fontWeight: 600,
                   color: "rgba(255,255,255,0.55)",
@@ -395,6 +404,7 @@ const DossierPanel: React.FC<DossierPanelProps> = ({ project, locked }) => {
                 <Github size={12} />
                 Source Code
               </a>
+              )}
 
               {!locked && (
                 <span style={{
