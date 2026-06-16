@@ -216,7 +216,7 @@ export const Footer = () => {
                     fontFamily: "'Plus Jakarta Sans', sans-serif",
                     fontWeight: 600,
                   }}>
-                    Full-Stack · Mobile · UI Architect
+                    Full-Stack Developer · Freelancer · Cloud & Mobile Systems
                   </div>
                 </div>
               </div>
@@ -328,7 +328,7 @@ export const Footer = () => {
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
                 letterSpacing: "0.08em", margin: 0,
               }}>
-                Crafted with ♥ somewhere in the cosmos
+                Engineered with React, Spring Boot & cloud systems across the digital universe
               </p>
             </div>
 

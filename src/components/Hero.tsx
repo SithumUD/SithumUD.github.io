@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, useMotionValue, useSpring, AnimatePresence } from "framer-motion";
 import {
   Github, Linkedin, Mail, FileText, ArrowRight, Sparkles,
-  Code2, Layers, Smartphone, Terminal, Zap, Star,
+  Code2, Layers, Smartphone, Terminal, Zap, Star, Network,
 } from "lucide-react";
 import HireMeModal from "./HireMeModal";
 
@@ -413,10 +413,11 @@ interface GlobePinDef {
 }
 
 const GLOBE_PINS: GlobePinDef[] = [
-  { label: "Backend",  sub: "Java · Spring · Node",      lat:  35, lng:  20,  color: "#60A5FA", icon: Terminal },
-  { label: "Frontend", sub: "React · TS · Tailwind",     lat: -20, lng: 100,  color: "#A78BFA", icon: Layers   },
-  { label: "Mobile",   sub: "Android · Kotlin",          lat:  50, lng: -60,  color: "#FBBF24", icon: Smartphone },
-  { label: "Cloud",    sub: "AWS · GCP · Docker",        lat: -45, lng: -30,  color: "#22D3EE", icon: Code2    },
+  { label: "Backend Systems",  sub: "Java · Spring Boot · Node.js · REST APIs",      lat:  35, lng:  20,  color: "#60A5FA", icon: Terminal },
+  { label: "Frontend Engineering", sub: "React · Next.js · TypeScript · UI Systems",     lat: -20, lng: 100,  color: "#A78BFA", icon: Layers   },
+  { label: "Mobile Development",   sub: "Android · Kotlin · Cross-platform apps",          lat:  50, lng: -60,  color: "#FBBF24", icon: Smartphone },
+  { label: "Cloud & DevOps",    sub: "GCP · OCI · Docker · CI/CD",        lat: -45, lng: -30,  color: "#22D3EE", icon: Code2    },
+  { label: "System Architecture",         sub: "Microservices · Scalable SaaS · Enterprise Design", lat:   10, lng:   60,  color: "#34D399", icon: Network      },
 ];
 
 const GlobeCanvas: React.FC<{ phase: number }> = ({ phase }) => {
@@ -1083,11 +1084,13 @@ export const Hero = () => {
   const phase = useBootSequence();
 
   const typed = useTypewriter([
-    "Software Engineer",
-    "Full-Stack Developer",
-    "Android Engineer",
-    "UI Architect",
-  ], 70, 40, 2400);
+  "Full Stack & Cloud Engineer",
+  "Software Architect",
+  "Enterprise Application Developer",
+  "Cloud Solution Engineer",
+  "Backend Systems Engineer",
+  "SaaS Builder",
+], 70, 40, 2400);
 
   useEffect(() => {
     const h = (e: MouseEvent) => setMouse({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
@@ -1304,8 +1307,8 @@ export const Hero = () => {
                     </div>
 
                     <VitalRow label="CALLSIGN"  value="SITHUM.UD"             color="#6EE7B7"               delay={0}    phase={phase} mono />
-                    <VitalRow label="RANK"      value="Senior Developer"       color="rgba(255,255,255,0.85)" delay={0.08} phase={phase} />
-                    <VitalRow label="SPEC"      value="Full-Stack · Mobile"    color="#38BDF8"               delay={0.16} phase={phase} />
+                    <VitalRow label="RANK"      value="Full Stack & Cloud Engineer"       color="rgba(255,255,255,0.85)" delay={0.08} phase={phase} />
+                    <VitalRow label="SPEC"      value="Enterprise · Cloud · APIs"    color="#38BDF8"               delay={0.16} phase={phase} />
                     <VitalRow label="LOCATION"  value="Earth · LK"             color="rgba(255,255,255,0.6)"  delay={0.24} phase={phase} />
                     <VitalRow label="STATUS"    value="ONLINE ●"               color="#6EE7B7"               delay={0.32} phase={phase} />
 
@@ -1358,41 +1361,51 @@ export const Hero = () => {
               </div>
 
               {/* Name headline */}
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: phase >= 4 ? 1 : 0, y: phase >= 4 ? 0 : 12 }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <h1 style={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontSize: "clamp(1.8rem, 5vw, 3.2rem)",
-                  fontWeight: 800,
-                  letterSpacing: "-0.03em",
-                  lineHeight: 1.05,
-                  margin: "0 0 6px",
-                  color: "#fff",
-                  textAlign: "center",
-                }}>
-                  Sithum{" "}
-                  <span style={{
-                    background: "linear-gradient(135deg,#6EE7B7 0%,#38BDF8 50%,#C4B5FD 100%)",
-                    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-                  }}>
-                    Udayanga
-                  </span>
-                </h1>
-                <p style={{
-                  fontSize: "clamp(11px, 3vw, 12.5px)", color: "rgba(255,255,255,0.35)",
-                  fontFamily: "'Plus Jakarta Sans', sans-serif", margin: 0, lineHeight: 1.6,
-                  maxWidth: 380, textAlign: "center", marginLeft: "auto", marginRight: "auto",
-                }}>
-                  Building{" "}
-                  <strong style={{ color: "rgba(255,255,255,0.75)", fontWeight: 600 }}>
-                    expertly crafted solutions
-                  </strong>{" "}
-                  that blend design, development, and performance across web and mobile.
-                </p>
-              </motion.div>
+              {/* Name headline */}
+<motion.div
+  initial={{ opacity: 0, y: 12 }}
+  animate={{ opacity: phase >= 4 ? 1 : 0, y: phase >= 4 ? 0 : 12 }}
+  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+>
+  <h1 style={{
+    fontFamily: "'Syne', sans-serif",
+    fontSize: "clamp(1.8rem, 5vw, 3.2rem)",
+    fontWeight: 800,
+    letterSpacing: "-0.03em",
+    lineHeight: 1.05,
+    margin: "0 0 6px",
+    color: "#fff",
+    textAlign: "center",
+  }}>
+    Sithum{" "}
+    <span style={{
+      background: "linear-gradient(135deg,#6EE7B7 0%,#38BDF8 50%,#C4B5FD 100%)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      backgroundClip: "text",
+    }}>
+      Udayanga
+    </span>
+  </h1>
+
+  <p style={{
+    fontSize: "clamp(11px, 3vw, 12.5px)",
+    color: "rgba(255,255,255,0.35)",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    margin: 0,
+    lineHeight: 1.6,
+    maxWidth: 420,
+    textAlign: "center",
+    marginLeft: "auto",
+    marginRight: "auto",
+  }}>
+    Building{" "}
+    <strong style={{ color: "rgba(255,255,255,0.75)", fontWeight: 600 }}>
+      scalable cloud systems and enterprise software
+    </strong>{" "}
+    that combine architecture, performance, and user experience across modern web platforms.
+  </p>
+</motion.div>
 
               {/* CTA row */}
               <motion.div

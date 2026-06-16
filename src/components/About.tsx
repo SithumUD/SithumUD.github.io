@@ -338,60 +338,74 @@ export const About: React.FC = () => {
   }, []);
 
   const logEntries = [
-    {
-      icon: "👨‍🚀",
-      text: (
-        <>
-          Crew member <strong style={{ color: "#6EE7B7" }}>Sithum</strong> — full-stack developer &
-          Android engineer. Passionate about intuitive, high-performance applications.
-        </>
-      ),
-    },
-    {
-      icon: "⚙️",
-      text: (
-        <>
-          Core systems:{" "}
-          <span style={{ color: "#F97316", fontWeight: 600 }}>Java</span>,{" "}
-          <span style={{ color: "#38BDF8", fontWeight: 600 }}>React.js</span>,{" "}
-          <span style={{ color: "#86EFAC", fontWeight: 600 }}>Spring Boot</span>,{" "}
-          <span style={{ color: "#C4B5FD", fontWeight: 600 }}>Android / Kotlin</span>.
-          Specialises in scalable desktop, web &amp; mobile solutions.
-        </>
-      ),
-    },
-    {
-      icon: "🛰️",
-      text: (
-        <>
-          Missions completed: <strong style={{ color: "rgba(255,255,255,0.8)" }}>POS systems</strong>,{" "}
-          <strong style={{ color: "rgba(255,255,255,0.8)" }}>tour rental platforms</strong>, and{" "}
-          <strong style={{ color: "rgba(255,255,255,0.8)" }}>music streaming apps</strong>.
-          Enjoys tackling complex challenges and delivering impactful software.
-        </>
-      ),
-    },
-    {
-      icon: "✦",
-      text: (
-        <>
-          Directive: clean code, peak performance, seamless UX. Staying on the
-          cutting edge of the galaxy's latest tech trends.
-        </>
-      ),
-    },
-  ];
+  {
+    icon: "👨‍🚀",
+    text: (
+      <>
+        Full Stack & Cloud Engineer — building scalable enterprise systems, SaaS platforms,
+        and production-ready applications with focus on performance and clean architecture.
+      </>
+    ),
+  },
+  {
+    icon: "⚙️",
+    text: (
+      <>
+        Core stack:{" "}
+        <span style={{ color: "#F97316", fontWeight: 600 }}>Java</span>,{" "}
+        <span style={{ color: "#38BDF8", fontWeight: 600 }}>Spring Boot</span>,{" "}
+        <span style={{ color: "#A78BFA", fontWeight: 600 }}>React / Next.js</span>,{" "}
+        <span style={{ color: "#86EFAC", fontWeight: 600 }}>Node.js</span>,{" "}
+        <span style={{ color: "#C4B5FD", fontWeight: 600 }}>Android (Kotlin)</span>.
+        Specialized in distributed backend systems and APIs.
+      </>
+    ),
+  },
+  {
+    icon: "☁️",
+    text: (
+      <>
+        Cloud & DevOps: deploying scalable systems using{" "}
+        <span style={{ color: "#60A5FA", fontWeight: 600 }}>GCP</span>,{" "}
+        <span style={{ color: "#F97316", fontWeight: 600 }}>OCI</span>, and{" "}
+        <span style={{ color: "#38BDF8", fontWeight: 600 }}>Docker</span>.
+        Experience in CI/CD, containerized deployment, and system scaling.
+      </>
+    ),
+  },
+  {
+    icon: "🛰️",
+    text: (
+      <>
+        Built real-world systems including{" "}
+        <strong style={{ color: "rgba(255,255,255,0.8)" }}>POS platforms</strong>,{" "}
+        <strong style={{ color: "rgba(255,255,255,0.8)" }}>hotel management systems</strong>,{" "}
+        <strong style={{ color: "rgba(255,255,255,0.8)" }}>property marketplaces</strong>,
+        and enterprise booking systems.
+      </>
+    ),
+  },
+  {
+    icon: "🚀",
+    text: (
+      <>
+        Focus: scalable architecture, clean code, secure APIs, and SaaS product development.
+        Always building systems that can handle real production workloads.
+      </>
+    ),
+  },
+];
 
   const capabilities = [
-    { icon: FaJava,      name: "Enterprise Apps",    sub: "Backend",  color: "#F97316" },
-    { icon: SiAndroid,   name: "Android Dev",         sub: "Mobile",   color: "#C4B5FD" },
-    { icon: FaJs,        name: "Web Dev",             sub: "Frontend", color: "#FCD34D" },
-    { icon: FaDatabase,  name: "Database Mgmt",       sub: "Systems",  color: "#38BDF8" },
-    { icon: FaReact,     name: "UI / UX Design",      sub: "Design",   color: "#6EE7B7" },
-    { icon: FaGithub,    name: "Version Control",     sub: "DevOps",   color: "#E2E8F0" },
-    { icon: SiSpringboot,name: "Spring Boot",         sub: "Backend",  color: "#86EFAC" },
-    { icon: SiKotlin,    name: "Kotlin",              sub: "Mobile",   color: "#C084FC" },
-  ];
+  { icon: FaJava,       name: "Backend Systems",     sub: "Spring Boot · APIs",        color: "#F97316" },
+  { icon: FaReact,      name: "Frontend Systems",    sub: "React · Next.js",           color: "#6EE7B7" },
+  { icon: FaJs,         name: "Full Stack Dev",      sub: "Web Applications",          color: "#FCD34D" },
+  { icon: FaDatabase,   name: "Database Design",     sub: "MySQL · PostgreSQL",       color: "#38BDF8" },
+  { icon: SiSpringboot, name: "Enterprise Backend",  sub: "Microservices · APIs",      color: "#86EFAC" },
+  { icon: SiAndroid,    name: "Mobile Apps",         sub: "Android · Kotlin",          color: "#C084FC" },
+  { icon: FaGithub,     name: "DevOps & Git",        sub: "CI/CD · Version Control",   color: "#E2E8F0" },
+  { icon: SiKotlin,     name: "Cloud Engineering",   sub: "GCP · OCI · Docker",        color: "#60A5FA" },
+];
 
   return (
     <section
@@ -536,9 +550,9 @@ export const About: React.FC = () => {
             <div className="avatar-stats-row">
               <AstronautAvatar />
               <div className="stats-badge-group">
-                <StatBadge value="3+" label="Years active"   color="#6EE7B7" delay={0.3} inView={inView} />
-                <StatBadge value="10+" label="Projects built" color="#38BDF8" delay={0.4} inView={inView} />
-                <StatBadge value="8"  label="Core systems"   color="#C4B5FD" delay={0.5} inView={inView} />
+                <StatBadge value="Full Stack" label="Engineering Focus" color="#6EE7B7" delay={0.3} inView={inView} />
+<StatBadge value="Cloud + SaaS" label="System Type" color="#38BDF8" delay={0.4} inView={inView} />
+<StatBadge value="Production" label="Ready Systems" color="#C4B5FD" delay={0.5} inView={inView} />
               </div>
             </div>
 
