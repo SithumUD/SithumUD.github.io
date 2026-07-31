@@ -38,9 +38,10 @@ const StarfieldCanvas = () => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
     let t = 0;
+    const dpr = Math.min(devicePixelRatio, 1.5);
     const resize = () => {
-      canvas.width = canvas.offsetWidth * devicePixelRatio;
-      canvas.height = canvas.offsetHeight * devicePixelRatio;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
     };
     resize();
     window.addEventListener("resize", resize);
@@ -85,7 +86,23 @@ const StarfieldCanvas = () => {
       t++; raf.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(raf.current); };
+
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !raf.current) draw();
+    }, { rootMargin: "200px" });
+    io.observe(canvas);
+
+    const onVisChange = () => {
+      if (!document.hidden && !raf.current) draw();
+    };
+    document.addEventListener("visibilitychange", onVisChange);
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(raf.current);
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVisChange);
+    };
   }, [stars]);
 
   return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1 }} />;
@@ -126,8 +143,6 @@ const SignalWaveform: React.FC<{ active: boolean; messageLength: number }> = ({ 
       ctx.beginPath();
       ctx.strokeStyle = color;
       ctx.lineWidth = active ? 1.5 : 0.8;
-      ctx.shadowColor = active ? "#6EE7B7" : "transparent";
-      ctx.shadowBlur = active ? 6 : 0;
       const t = tRef.current;
       for (let x = 0; x < W; x++) {
         const progress = x / W;
@@ -141,7 +156,13 @@ const SignalWaveform: React.FC<{ active: boolean; messageLength: number }> = ({ 
       rafRef.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => cancelAnimationFrame(rafRef.current);
+
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !rafRef.current) draw();
+    }, { rootMargin: "200px" });
+    io.observe(canvasRef.current!);
+
+    return () => { cancelAnimationFrame(rafRef.current); io.disconnect(); };
   }, [active, messageLength, canvasWidth]);
 
   return (

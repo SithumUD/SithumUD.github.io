@@ -9,9 +9,11 @@ import HireMeModal from "./HireMeModal";
 /* ══════════════════════════════════════════
    STARFIELD CANVAS
 ══════════════════════════════════════════ */
-const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
+const StarfieldCanvas = () => {
   const ref = useRef<HTMLCanvasElement>(null);
   const raf = useRef(0);
+  const pausedRef = useRef(false);
+  const mouseRef = useRef({ x: 0.5, y: 0.5 });
 
   const stars = useMemo(() => Array.from({ length: 220 }, () => ({
     x: Math.random(), y: Math.random(),
@@ -26,10 +28,20 @@ const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
     x: 0, y: 0, vx: 0, vy: 0, alpha: 0, active: false, age: 0,
   })));
 
+  // Mouse tracked via ref — no re-renders on mousemove
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight };
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    return () => window.removeEventListener("mousemove", onMouseMove);
+  }, []);
+
   useEffect(() => {
     const canvas = ref.current; if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
     let t = 0;
+    const dpr = Math.min(devicePixelRatio, 1.5);
 
     const spawn = (s: typeof shots.current[0]) => {
       s.x = Math.random() * 0.7; s.y = Math.random() * 0.4;
@@ -41,15 +53,17 @@ const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
     shots.current.forEach((s, i) => setTimeout(() => spawn(s), i * 1600 + Math.random() * 2200));
 
     const resize = () => {
-      canvas.width = canvas.offsetWidth * devicePixelRatio;
-      canvas.height = canvas.offsetHeight * devicePixelRatio;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
     };
     resize();
     window.addEventListener("resize", resize);
 
     const draw = () => {
+      if (pausedRef.current) { raf.current = 0; return; }
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
+      const { x: mx, y: my } = mouseRef.current;
       const px = (mx - 0.5) * 16, py = (my - 0.5) * 10;
 
       [
@@ -97,8 +111,7 @@ const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
         g.addColorStop(0, "rgba(255,255,255,0)");
         g.addColorStop(0.5, `rgba(190,225,255,${s.alpha * 0.45})`);
         g.addColorStop(1, `rgba(255,255,255,${s.alpha})`);
-        ctx.save(); ctx.strokeStyle = g; ctx.lineWidth = 1.4;
-        ctx.shadowBlur = 6; ctx.shadowColor = "rgba(147,197,253,0.9)"; ctx.globalAlpha = s.alpha;
+        ctx.save(); ctx.strokeStyle = g; ctx.lineWidth = 1.4; ctx.globalAlpha = s.alpha;
         ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
         ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
         ctx.beginPath(); ctx.arc(x1, y1, 1.4, 0, Math.PI * 2); ctx.fill();
@@ -108,8 +121,27 @@ const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
       t++; raf.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(raf.current); };
-  }, [stars, mx, my]);
+
+    // Pause RAF when section is off-screen
+    const io = new IntersectionObserver(([entry]) => {
+      pausedRef.current = !entry.isIntersecting;
+      if (entry.isIntersecting && !raf.current) draw();
+    }, { rootMargin: "200px" });
+    io.observe(canvas);
+
+    const onVisChange = () => {
+      pausedRef.current = document.hidden;
+      if (!document.hidden && !raf.current) draw();
+    };
+    document.addEventListener("visibilitychange", onVisChange);
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(raf.current);
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVisChange);
+    };
+  }, [stars]);
 
   return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1 }} />;
 };
@@ -360,8 +392,6 @@ const EKGCanvas: React.FC<{ active: boolean }> = ({ active }) => {
       ctx.beginPath();
       ctx.strokeStyle = "#6EE7B7";
       ctx.lineWidth = 1.2;
-      ctx.shadowColor = "#6EE7B7";
-      ctx.shadowBlur = 4;
       const offset = t.current % W;
 
       for (let x = 0; x < W; x++) {
@@ -424,8 +454,11 @@ const GlobeCanvas: React.FC<{ phase: number }> = ({ phase }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const rotRef = useRef(0);
+  const pausedRef = useRef(false);
   const [hoveredPin, setHoveredPin] = useState<number | null>(null);
-  const [pinScreenPos, setPinScreenPos] = useState<{ x: number; y: number }[]>([]);
+  // Use refs for data read inside RAF — avoids 60 React re-renders/sec
+  const hoveredPinRef = useRef<number | null>(null);
+  const pinScreenPosRef = useRef<{ x: number; y: number }[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -523,14 +556,12 @@ const GlobeCanvas: React.FC<{ phase: number }> = ({ phase }) => {
 
         // Only show pins on visible hemisphere
         if (rz2 > -R * 0.1) {
-          const isHov = hoveredPin === i;
+          const isHov = hoveredPinRef.current === i;
           const alpha = Math.max(0.3, (rz2 + R) / (R * 1.5));
 
           // Pin dot
           ctx.save();
           ctx.globalAlpha = alpha;
-          ctx.shadowColor = pin.color;
-          ctx.shadowBlur = isHov ? 16 : 8;
           ctx.fillStyle = pin.color;
           ctx.beginPath();
           ctx.arc(sx, sy, isHov ? 6 * dpr : 4 * dpr, 0, Math.PI * 2);
@@ -566,13 +597,19 @@ const GlobeCanvas: React.FC<{ phase: number }> = ({ phase }) => {
         }
       });
 
-      setPinScreenPos([...newPinPos]);
+      pinScreenPosRef.current = [...newPinPos];
       rotRef.current += 0.003;
       rafRef.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(rafRef.current); };
-  }, [phase, hoveredPin]);
+
+    const io = new IntersectionObserver(([entry]) => {
+      pausedRef.current = !entry.isIntersecting;
+    }, { rootMargin: "200px" });
+    if (canvasRef.current) io.observe(canvasRef.current);
+
+    return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(rafRef.current); io.disconnect(); };
+  }, [phase]);
 
   // Touch and mouse handlers for pin detection
   const updateHoverFromPoint = useCallback((clientX: number, clientY: number) => {
@@ -581,11 +618,12 @@ const GlobeCanvas: React.FC<{ phase: number }> = ({ phase }) => {
     const mx = clientX - rect.left;
     const my = clientY - rect.top;
     let found: number | null = null;
-    pinScreenPos.forEach((p, i) => {
+    pinScreenPosRef.current.forEach((p, i) => {
       if (Math.hypot(p.x - mx, p.y - my) < 22) found = i;
     });
+    hoveredPinRef.current = found;
     setHoveredPin(found);
-  }, [pinScreenPos]);
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     updateHoverFromPoint(e.clientX, e.clientY);
@@ -616,7 +654,7 @@ const GlobeCanvas: React.FC<{ phase: number }> = ({ phase }) => {
 
       {/* Pin tooltip cards - responsive positioning */}
       <AnimatePresence>
-        {hoveredPin !== null && pinScreenPos[hoveredPin] && pinScreenPos[hoveredPin].x > 0 && (
+        {hoveredPin !== null && pinScreenPosRef.current[hoveredPin] && pinScreenPosRef.current[hoveredPin].x > 0 && (
           <motion.div
             key={hoveredPin}
             initial={{ opacity: 0, scale: 0.85, y: 8 }}
@@ -625,8 +663,8 @@ const GlobeCanvas: React.FC<{ phase: number }> = ({ phase }) => {
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
             style={{
               position: "fixed",
-              left: `min(${pinScreenPos[hoveredPin].x}px, ${window.innerWidth - 160}px)`,
-              top: `${Math.max(10, pinScreenPos[hoveredPin].y - 88)}px`,
+              left: `min(${pinScreenPosRef.current[hoveredPin].x}px, ${window.innerWidth - 160}px)`,
+              top: `${Math.max(10, pinScreenPosRef.current[hoveredPin].y - 88)}px`,
               width: "min(150px, 80vw)",
               background: "rgba(4,10,24,0.95)",
               border: `1px solid ${GLOBE_PINS[hoveredPin].color}50`,
@@ -662,7 +700,7 @@ const GlobeCanvas: React.FC<{ phase: number }> = ({ phase }) => {
       </AnimatePresence>
 
       {/* Pin labels always visible - responsive font */}
-      {phase >= 4 && pinScreenPos.map((pos, i) => pos.x > 0 && (
+      {phase >= 4 && pinScreenPosRef.current.map((pos, i) => pos.x > 0 && (
         <div key={i} style={{
           position: "absolute",
           left: pos.x,
@@ -760,7 +798,6 @@ const HireBtn: React.FC<{ onClick: () => void }> = ({ onClick }) => {
   return (
     <motion.button
       ref={ref}
-      style={{ x: sx, y: sy }}
       onMouseMove={e => {
         if (!ref.current) return;
         const b = ref.current.getBoundingClientRect();
@@ -889,7 +926,6 @@ const MissionBriefBtn: React.FC<{ href: string }> = ({ href }) => {
       ref={ref}
       href={href}
       download
-      style={{ x: sx, y: sy }}
       onMouseMove={e => {
         if (!ref.current) return;
         const b = ref.current.getBoundingClientRect();
@@ -1107,7 +1143,6 @@ export const Hero = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
         * { box-sizing: border-box; }
         @keyframes blink-h   { 50% { opacity: 0 } }
         @keyframes blink-dot { 50% { opacity: 0 } }
@@ -1213,7 +1248,7 @@ export const Hero = () => {
           animation: "aur 4s linear infinite",
         }} />
 
-        <StarfieldCanvas mx={mouse.x} my={mouse.y} />
+        <StarfieldCanvas />
         <HUDCorners />
         <BootStatusBar phase={phase} />
 

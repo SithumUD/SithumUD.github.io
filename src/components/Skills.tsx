@@ -114,10 +114,11 @@ const BackgroundCanvas: React.FC<{ containerRef: React.RefObject<HTMLDivElement>
     const ctx = canvas.getContext("2d")!;
     let t = 0;
 
+    const dpr = Math.min(devicePixelRatio, 1.5);
     const resize = () => {
-      canvas.width = container.offsetWidth * devicePixelRatio;
-      canvas.height = container.offsetHeight * devicePixelRatio;
-      ctx.scale(devicePixelRatio, devicePixelRatio);
+      canvas.width = container.offsetWidth * dpr;
+      canvas.height = container.offsetHeight * dpr;
+      ctx.scale(dpr, dpr);
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -177,7 +178,13 @@ const BackgroundCanvas: React.FC<{ containerRef: React.RefObject<HTMLDivElement>
       rafRef.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
+
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !rafRef.current) draw();
+    }, { rootMargin: "200px" });
+    io.observe(canvas);
+
+    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); io.disconnect(); };
   }, [ambientStars, containerRef]);
 
   return (
@@ -278,7 +285,8 @@ const SkillStar: React.FC<SkillStarProps> = ({ star, isHovered, isOtherHovered, 
   const Icon = star.skill.icon;
   const animName = `twinkle_${star.id}`;
 
-  // Scale star size on mobile
+  // Inline keyframes consolidated to avoid 25 separate <style> tags
+  // We generate just one <style> per star instead
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const baseSize = isMobile ? Math.min(star.size, 5) : star.size;
   const hoverScale = isHovered ? (isMobile ? 2.2 : 2.5) : 1;
@@ -540,7 +548,6 @@ export const Skills: React.FC = () => {
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
       `}</style>
 
       <div ref={ref} style={{ maxWidth: 1100, margin: "0 auto" }}>

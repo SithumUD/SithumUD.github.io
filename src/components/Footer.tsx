@@ -23,9 +23,10 @@ const FooterCanvas = () => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
     let t = 0;
+    const dpr = Math.min(devicePixelRatio, 1.5);
     const resize = () => {
-      canvas.width = canvas.offsetWidth * devicePixelRatio;
-      canvas.height = canvas.offsetHeight * devicePixelRatio;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
     };
     resize();
     window.addEventListener("resize", resize);
@@ -45,7 +46,13 @@ const FooterCanvas = () => {
       t++; raf.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(raf.current); };
+
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !raf.current) draw();
+    }, { rootMargin: "200px" });
+    io.observe(canvas);
+
+    return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(raf.current); io.disconnect(); };
   }, [stars]);
 
   return (

@@ -37,9 +37,10 @@ const StarfieldCanvas = () => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
     let t = 0;
+    const dpr = Math.min(devicePixelRatio, 1.5);
     const resize = () => {
-      canvas.width = canvas.offsetWidth * devicePixelRatio;
-      canvas.height = canvas.offsetHeight * devicePixelRatio;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
     };
     resize();
     window.addEventListener("resize", resize);
@@ -83,7 +84,23 @@ const StarfieldCanvas = () => {
       t++; raf.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(raf.current); };
+
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !raf.current) draw();
+    }, { rootMargin: "200px" });
+    io.observe(canvas);
+
+    const onVisChange = () => {
+      if (!document.hidden && !raf.current) draw();
+    };
+    document.addEventListener("visibilitychange", onVisChange);
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(raf.current);
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVisChange);
+    };
   }, [stars]);
 
   return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1 }} />;
@@ -279,6 +296,8 @@ const DossierPanel: React.FC<DossierPanelProps> = ({ project, locked }) => {
             <img
               src={project.image}
               alt={project.title}
+              loading="lazy"
+              decoding="async"
               style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
@@ -457,9 +476,10 @@ const OrbitMapCanvas: React.FC<OrbitMapCanvasProps> = ({ containerRef, activeCat
     let t = 0;
     const orbitRadii = getOrbitRadii(isMobile);
 
+    const dpr = Math.min(devicePixelRatio, 1.5);
     const resize = () => {
-      canvas.width = container.offsetWidth * devicePixelRatio;
-      canvas.height = container.offsetHeight * devicePixelRatio;
+      canvas.width = container.offsetWidth * dpr;
+      canvas.height = container.offsetHeight * dpr;
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -530,7 +550,23 @@ const OrbitMapCanvas: React.FC<OrbitMapCanvasProps> = ({ containerRef, activeCat
       rafRef.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
+
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !rafRef.current) draw();
+    }, { rootMargin: "200px" });
+    io.observe(canvas);
+
+    const onVisChange = () => {
+      if (!document.hidden && !rafRef.current) draw();
+    };
+    document.addEventListener("visibilitychange", onVisChange);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      ro.disconnect();
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVisChange);
+    };
   }, [ambientStars, containerRef, activeCategory, isMobile]);
 
   return (
@@ -833,15 +869,19 @@ const GalaxyOrbitMap: React.FC<GalaxyOrbitMapProps> = ({ activeCategory, inView 
     return () => ro.disconnect();
   }, []);
 
-  // Animate planet angles (slower on mobile)
+  // Animate planet angles — throttled to ~30fps to halve React reconciler load
+  const lastUpdateRef = useRef(0);
   useEffect(() => {
     if (!inView) return;
-    const animate = () => {
-      projectsData.forEach(p => {
-        const speed = (CAT_CONFIG[p.category]?.speed ?? 0.001) * (isMobile ? 0.7 : 1);
-        anglesRef.current[p.id] = (anglesRef.current[p.id] ?? 0) + speed;
-      });
-      forceUpdate(n => n + 1);
+    const animate = (now: number) => {
+      if (now - lastUpdateRef.current >= 33) {
+        lastUpdateRef.current = now;
+        projectsData.forEach(p => {
+          const speed = (CAT_CONFIG[p.category]?.speed ?? 0.001) * (isMobile ? 0.7 : 1) * 2;
+          anglesRef.current[p.id] = (anglesRef.current[p.id] ?? 0) + speed;
+        });
+        forceUpdate(n => n + 1);
+      }
       rafRef.current = requestAnimationFrame(animate);
     };
     rafRef.current = requestAnimationFrame(animate);

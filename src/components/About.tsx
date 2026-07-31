@@ -11,9 +11,11 @@ import {
 /* ══════════════════════════════════════════
    STARFIELD CANVAS (Responsive)
 ══════════════════════════════════════════ */
-const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
+const StarfieldCanvas = () => {
   const ref = useRef<HTMLCanvasElement>(null);
   const raf = useRef(0);
+  const pausedRef = useRef(false);
+  const mouseRef = useRef({ x: 0.5, y: 0.5 });
 
   // Reduced star count on mobile for performance
   const stars = useMemo(() => {
@@ -30,19 +32,30 @@ const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
   }, []);
 
   useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight };
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    return () => window.removeEventListener("mousemove", onMouseMove);
+  }, []);
+
+  useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
     let t = 0;
+    const dpr = Math.min(devicePixelRatio, 1.5);
     const resize = () => {
-      canvas.width = canvas.offsetWidth * devicePixelRatio;
-      canvas.height = canvas.offsetHeight * devicePixelRatio;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
     };
     resize();
     window.addEventListener("resize", resize);
     const draw = () => {
+      if (pausedRef.current) { raf.current = 0; return; }
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
+      const { x: mx, y: my } = mouseRef.current;
       const px = (mx - 0.5) * 16, py = (my - 0.5) * 10;
       [
         { x: 0.15, y: 0.22, r: 0.3,  c: "rgba(110,231,183,0.028)" },
@@ -80,8 +93,26 @@ const StarfieldCanvas = ({ mx, my }: { mx: number; my: number }) => {
       t++; raf.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(raf.current); };
-  }, [stars, mx, my]);
+
+    const io = new IntersectionObserver(([entry]) => {
+      pausedRef.current = !entry.isIntersecting;
+      if (entry.isIntersecting && !raf.current) draw();
+    }, { rootMargin: "200px" });
+    io.observe(canvas);
+
+    const onVisChange = () => {
+      pausedRef.current = document.hidden;
+      if (!document.hidden && !raf.current) draw();
+    };
+    document.addEventListener("visibilitychange", onVisChange);
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(raf.current);
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVisChange);
+    };
+  }, [stars]);
 
   return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1 }} />;
 };
@@ -488,7 +519,7 @@ export const About: React.FC = () => {
         }
       `}</style>
 
-      <StarfieldCanvas mx={mouse.x} my={mouse.y} />
+      <StarfieldCanvas />
 
       {/* Spotlight */}
       <div style={{
