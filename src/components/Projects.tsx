@@ -136,7 +136,7 @@ const projectsData = [
     "Docker",
   ],
   category: "web application",
-  githubUrl: "https://github.com/SithumUD/POS-system",
+  githubUrl: "https://github.com/SithumUD/POS-system.git",
 }
 ,
   {
