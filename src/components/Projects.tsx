@@ -116,14 +116,29 @@ const CAT_CONFIG: Record<string, { color: string; glow: string; badge: string; l
 
 const projectsData = [
   {
-    id: 1,
-    title: "POS & Inventory System",
-    description: "A full-stack system to manage point of sale and inventory with JWT authentication and real-time data.",
-    image: "pos.png",
-    technologies: ["Java", "Spring Boot", "React.js", "Tailwind CSS", "JWT Auth", "MySQL"],
-    category: "web application",
-    githubUrl: "https://github.com/SithumUD/pos-system.git",
-  },
+  id: 1,
+  title: "NexPOS – POS & Inventory Management System",
+  description: "A production-grade, multi-tenant Point of Sale and Inventory Management System. Built with Spring Boot 4 and React 18, featuring RabbitMQ event-driven checkout, real-time WebSocket stock updates, JWT authentication, multi-branch management, P&L analytics, and fraud detection. Includes an Expo React Native barcode scanner companion app.",
+  image: "pos.png",
+  technologies: [
+    "Java",
+    "Spring Boot",
+    "React.js",
+    "TypeScript",
+    "Tailwind CSS",
+    "PostgreSQL",
+    "RabbitMQ",
+    "Redis",
+    "WebSocket",
+    "React Native",
+    "Expo",
+    "JWT Auth",
+    "Docker",
+  ],
+  category: "web application",
+  githubUrl: "https://github.com/SithumUD/POS-system",
+}
+,
   {
     id: 2,
     title: "Hotel Website",
